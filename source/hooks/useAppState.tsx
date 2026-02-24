@@ -108,6 +108,8 @@ export function useAppState() {
 	const [isCheckpointLoadMode, setIsCheckpointLoadMode] =
 		useState<boolean>(false);
 	const [isExplorerMode, setIsExplorerMode] = useState<boolean>(false);
+	const [isIdeSelectionMode, setIsIdeSelectionMode] = useState<boolean>(false);
+	const [isVscodeEnabled, setIsVscodeEnabled] = useState<boolean>(false);
 	const [isSchedulerMode, setIsSchedulerMode] = useState<boolean>(false);
 	const [checkpointLoadData, setCheckpointLoadData] = useState<{
 		checkpoints: CheckpointListItem[];
@@ -275,6 +277,8 @@ export function useAppState() {
 		isMcpWizardMode,
 		isCheckpointLoadMode,
 		isExplorerMode,
+		isIdeSelectionMode,
+		isVscodeEnabled,
 		isSchedulerMode,
 		checkpointLoadData,
 		isToolConfirmationMode,
@@ -323,6 +327,8 @@ export function useAppState() {
 		setIsMcpWizardMode,
 		setIsCheckpointLoadMode,
 		setIsExplorerMode,
+		setIsIdeSelectionMode,
+		setIsVscodeEnabled,
 		setIsSchedulerMode,
 		setCheckpointLoadData,
 		setIsToolConfirmationMode,

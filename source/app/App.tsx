@@ -8,13 +8,12 @@ import {ModalSelectors} from '@/app/components/modal-selectors';
 import {shouldRenderWelcome} from '@/app/helpers';
 import type {AppProps} from '@/app/types';
 import {FileExplorer} from '@/components/file-explorer';
+import {IdeSelector} from '@/components/ide-selector';
+import {SuccessMessage} from '@/components/message-box';
 import {SchedulerView} from '@/components/scheduler-view';
 import SecurityDisclaimer from '@/components/security-disclaimer';
 import type {TitleShape} from '@/components/ui/styled-title';
-import {
-	shouldPromptExtensionInstall,
-	VSCodeExtensionPrompt,
-} from '@/components/vscode-extension-prompt';
+import {VSCodeExtensionPrompt} from '@/components/vscode-extension-prompt';
 import WelcomeMessage from '@/components/welcome-message';
 import {updateSelectedTheme} from '@/config/preferences';
 import {getThemeColors} from '@/config/themes';
@@ -45,6 +44,7 @@ import {
 	setGlobalQuestionHandler,
 } from '@/utils/question-queue';
 import {getShutdownManager} from '@/utils/shutdown';
+import {isExtensionInstalled} from '@/vscode/extension-installer';
 
 export default function App({
 	vscodeMode = false,
@@ -91,7 +91,7 @@ export default function App({
 
 	// VS Code extension installation prompt state
 	const [showExtensionPrompt, setShowExtensionPrompt] = React.useState(
-		() => vscodeMode && shouldPromptExtensionInstall(),
+		() => vscodeMode && !isExtensionInstalled(),
 	);
 	const [extensionPromptComplete, setExtensionPromptComplete] =
 		React.useState(false);
@@ -163,8 +163,10 @@ export default function App({
 		[logger],
 	);
 
+	const effectiveVscodeEnabled = vscodeMode || appState.isVscodeEnabled;
+
 	const vscodeServer = useVSCodeServer({
-		enabled: vscodeMode,
+		enabled: effectiveVscodeEnabled,
 		port: vscodePort,
 		currentModel: appState.currentModel,
 		currentProvider: appState.currentProvider,
@@ -416,6 +418,7 @@ export default function App({
 		setIsSettingsMode: appState.setIsSettingsMode,
 		setIsMcpWizardMode: appState.setIsMcpWizardMode,
 		setIsExplorerMode: appState.setIsExplorerMode,
+		setIsIdeSelectionMode: appState.setIsIdeSelectionMode,
 		addToChatQueue: appState.addToChatQueue,
 		getNextComponentKey: appState.getNextComponentKey,
 		reinitializeMCPServers: appInitialization.reinitializeMCPServers,
@@ -430,6 +433,54 @@ export default function App({
 	const exitSchedulerMode = React.useCallback(() => {
 		appState.setIsSchedulerMode(false);
 	}, [appState.setIsSchedulerMode, appState]);
+
+	// IDE selection handler
+	const handleIdeSelect = React.useCallback(
+		(ide: string) => {
+			appState.setIsIdeSelectionMode(false);
+			if (ide === 'vscode') {
+				appState.setIsVscodeEnabled(true);
+
+				// Check if extension needs installing
+				if (!isExtensionInstalled()) {
+					setShowExtensionPrompt(true);
+					setExtensionPromptComplete(false);
+				} else {
+					appState.addToChatQueue(
+						<SuccessMessage
+							key={`ide-vscode-enabled-${appState.getNextComponentKey()}`}
+							message="VS Code integration enabled. Starting server..."
+							hideBox={true}
+						/>,
+					);
+				}
+			}
+		},
+		[appState],
+	);
+
+	// Show confirmation once VS Code server is ready with its port
+	const prevVscodePortRef = React.useRef(vscodeServer.actualPort);
+	React.useEffect(() => {
+		const prevPort = prevVscodePortRef.current;
+		prevVscodePortRef.current = vscodeServer.actualPort;
+
+		// Only show message when port transitions from null to a value
+		// and it was triggered by /ide (not the --vscode CLI flag)
+		if (
+			prevPort === null &&
+			vscodeServer.actualPort !== null &&
+			appState.isVscodeEnabled
+		) {
+			appState.addToChatQueue(
+				<SuccessMessage
+					key={`ide-vscode-ready-${appState.getNextComponentKey()}`}
+					message={`VS Code server listening on port ${vscodeServer.actualPort}`}
+					hideBox={true}
+				/>,
+			);
+		}
+	}, [vscodeServer.actualPort, appState]);
 
 	// Setup app handlers
 	const appHandlers = useAppHandlers({
@@ -465,6 +516,7 @@ export default function App({
 		enterSettingsMode: modeHandlers.enterSettingsMode,
 		enterMcpWizardMode: modeHandlers.enterMcpWizardMode,
 		enterExplorerMode: modeHandlers.enterExplorerMode,
+		enterIdeSelectionMode: modeHandlers.enterIdeSelectionMode,
 		enterSchedulerMode,
 		handleChatMessage: chatHandler.handleChatMessage,
 	});
@@ -519,7 +571,7 @@ export default function App({
 				lspServersStatus: appState.lspServersStatus,
 				preferencesLoaded: appState.preferencesLoaded,
 				customCommandsCount: appState.customCommandsCount,
-				vscodeMode,
+				vscodeMode: effectiveVscodeEnabled,
 				vscodePort: vscodeServer.actualPort,
 				vscodeRequestedPort: vscodeServer.requestedPort,
 			}),
@@ -533,7 +585,7 @@ export default function App({
 			appState.lspServersStatus,
 			appState.preferencesLoaded,
 			appState.customCommandsCount,
-			vscodeMode,
+			effectiveVscodeEnabled,
 			vscodeServer.actualPort,
 			vscodeServer.requestedPort,
 		],
@@ -645,6 +697,16 @@ export default function App({
 							</Box>
 						)}
 
+						{/* IDE Selector - rendered below chat history */}
+						{appState.isIdeSelectionMode && (
+							<Box marginLeft={-1} flexDirection="column">
+								<IdeSelector
+									onSelect={handleIdeSelect}
+									onCancel={modeHandlers.handleIdeSelectionCancel}
+								/>
+							</Box>
+						)}
+
 						{/* Modal Selectors - rendered below chat history */}
 						{(appState.isModelSelectionMode ||
 							appState.isProviderSelectionMode ||
@@ -712,7 +774,8 @@ export default function App({
 								appState.isSettingsMode ||
 								appState.isMcpWizardMode ||
 								appState.isCheckpointLoadMode ||
-								appState.isExplorerMode
+								appState.isExplorerMode ||
+								appState.isIdeSelectionMode
 							) && (
 								<ChatInput
 									isCancelling={appState.isCancelling}

@@ -24,6 +24,7 @@ interface UseModeHandlersProps {
 	setIsSettingsMode: (mode: boolean) => void;
 	setIsMcpWizardMode: (mode: boolean) => void;
 	setIsExplorerMode: (mode: boolean) => void;
+	setIsIdeSelectionMode: (mode: boolean) => void;
 	addToChatQueue: (component: React.ReactNode) => void;
 	getNextComponentKey: () => number;
 	reinitializeMCPServers: (
@@ -48,6 +49,7 @@ export function useModeHandlers({
 	setIsSettingsMode,
 	setIsMcpWizardMode,
 	setIsExplorerMode,
+	setIsIdeSelectionMode,
 	addToChatQueue,
 	getNextComponentKey,
 	reinitializeMCPServers,
@@ -323,6 +325,16 @@ export function useModeHandlers({
 		setIsExplorerMode(false);
 	};
 
+	// Helper function to enter IDE selection mode
+	const enterIdeSelectionMode = () => {
+		setIsIdeSelectionMode(true);
+	};
+
+	// Handle IDE selection cancel
+	const handleIdeSelectionCancel = () => {
+		setIsIdeSelectionMode(false);
+	};
+
 	return {
 		enterModelSelectionMode,
 		enterProviderSelectionMode,
@@ -342,5 +354,7 @@ export function useModeHandlers({
 		handleSettingsCancel,
 		enterExplorerMode,
 		handleExplorerCancel,
+		enterIdeSelectionMode,
+		handleIdeSelectionCancel,
 	};
 }

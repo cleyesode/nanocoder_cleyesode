@@ -6,6 +6,7 @@ export * from '@/commands/exit';
 export * from '@/commands/explorer';
 export * from '@/commands/export';
 export * from '@/commands/help';
+export * from '@/commands/ide';
 export * from '@/commands/init';
 export * from '@/commands/lsp';
 export * from '@/commands/mcp';

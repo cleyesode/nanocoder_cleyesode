@@ -189,3 +189,33 @@ test('commands create - preserves .md extension when present', t => {
 	const safeName = fileName.endsWith('.md') ? fileName : `${fileName}.md`;
 	t.is(safeName, 'my-tool.md');
 });
+
+// Test /ide command parsing
+test('ide command parsing - extracts command name correctly', t => {
+	const message = '/ide';
+	const commandName = message.slice(1).split(/\s+/)[0];
+	t.is(commandName, 'ide');
+});
+
+test('ide command parsing - recognized as special command', t => {
+	const SPECIAL_COMMANDS: Record<string, string> = {
+		CLEAR: 'clear',
+		MODEL: 'model',
+		PROVIDER: 'provider',
+		MODEL_DATABASE: 'model-database',
+		SETUP_PROVIDERS: 'setup-providers',
+		SETUP_MCP: 'setup-mcp',
+		SETTINGS: 'settings',
+		STATUS: 'status',
+		CHECKPOINT: 'checkpoint',
+		EXPLORER: 'explorer',
+		IDE: 'ide',
+		SCHEDULE: 'schedule',
+		COMMANDS: 'commands',
+	};
+	const commandName = 'ide';
+	t.is(
+		Object.values(SPECIAL_COMMANDS).includes(commandName),
+		true,
+	);
+});

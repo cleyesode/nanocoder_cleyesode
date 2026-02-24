@@ -608,6 +608,7 @@ You can override this directory using `NANOCODER_DATA_DIR`.
 - `/lsp` – List connected LSP servers
 - `/schedule` – Schedule recurring AI tasks (see [Scheduled Tasks](#scheduled-tasks) section)
 - `/explorer` - Interactive file browser to navigate, preview, and select files for context
+- `/ide` - Connect to an IDE for live integration (e.g., VS Code diff previews)
 - `!command` - Execute bash commands directly without leaving Nanocoder (output becomes context for the LLM)
 - `@file` - Include file contents in messages automatically via fuzzy search as you type
 
