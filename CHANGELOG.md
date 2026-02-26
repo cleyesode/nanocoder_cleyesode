@@ -1,3 +1,53 @@
+# 1.23.0
+
+- Added `ask_user` tool for interactive question prompts. The LLM can now present the user with a question and selectable options during a conversation, returning their answer to guide the next step. Uses a global question-queue to bridge the tool's suspended Promise with the Ink UI component.
+
+- Added per-project cron scheduler for running AI tasks on a schedule. Schedule files live in `.nanocoder/schedules/` as markdown prompts with YAML frontmatter, managed via the `/schedule` command (`create`, `add`, `remove`, `list`, `logs`, `start`). Includes cron expression parsing, sequential job queue with deduplication, dedicated scheduler mode with auto-accept, and run history logging.
+
+- Added centralized graceful shutdown system. A `ShutdownManager` now coordinates cleanup of all services (VS Code server, MCP client, LSP manager, health monitor, logger) on exit, preventing orphaned child processes and dangling connections. Configurable via `NANOCODER_DEFAULT_SHUTDOWN_TIMEOUT` env variable. Closes #239.
+
+- Added file operation tools: `delete_file`, `move_file`, `create_directory`, and `copy_file`. Reorganized existing file tools into a `file-ops/` directory group.
+
+- Added readline keybind support to text input. Replaces `ink-text-input` with a custom `TextInput` component supporting Ctrl+W (delete word), Ctrl+U (kill to start), Ctrl+K (kill to end), Ctrl+A/E (jump to start/end), and Ctrl+B/F (move char). Closes #354.
+
+- Added `/context-max` command and `NANOCODER_CONTEXT_LIMIT` env variable for manual context length override on models not listed on models.dev. Resolution order: session override > env variable > models.dev > null. Closes #379.
+
+- Added `/ide` command matching the `--vscode` flag for toggling VS Code integration from within a session.
+
+- Added persistent context percentage display in the mode indicator, replacing the previous context checker component.
+
+- Added `include` and `path` parameters to `search_file_contents` tool for scoping searches to specific file patterns and directories.
+
+- Added Kanagawa theme.
+
+- Refactored the skills system into custom commands, eliminating redundant parsers, loaders, and test suites. Commands gain optional skill-like fields (`tags`, `triggers`, `estimated-tokens`, `resources`) for auto-injection and relevance scoring. The `/skills` command is removed and its functionality absorbed into `/commands` with new subcommands (`show`, `refresh`). Thanks to @yashksaini-coder for the initial skills implementation in PR #370.
+
+- V2 type-safe tool system overhaul with defensive parsing. Implements a three-tiered defense system for handling chaotic LLM outputs, preventing crashes from non-string responses and enabling robust self-correction. Includes universal type safety with `ensureString()`, response normalization, confidence system inversion, ghost echo deduplication, and AI SDK contract fixes. Local LLM experience is now significantly more stable. Thanks to @cleyesode. Closes #362.
+
+- Fix: XML parser now uses optimistic matching for consistency with the JSON parser. Thanks to @cleyesode.
+
+- Fix: Bash tool now emits progress immediately on stdout/stderr data instead of waiting for the 500ms timer, so fast-completing commands show streaming output.
+
+- Fix: Recognize `127.0.0.1` as a local server URL and tighten error classification. Ollama users configuring `127.0.0.1` instead of `localhost` no longer experience misleading connection errors. Replaced broad `connect` substring match with specific error codes to prevent misclassifying "disconnect"/"reconnect". Closes #366.
+
+- Fix: Skip loading git tools when not inside a git repository.
+
+- Fix: Strip ANSI escape codes before running regex matching in tool formatters.
+
+- Fix: Gap in layout during auto-compact.
+
+- Fix: Hardened `write_file` validation and MCP client type safety.
+
+- Fix: Use local `TextInput` component instead of the missing `ink-text-input` package.
+
+- Fix(mcp): Use Python-based `mcp-server-fetch` instead of non-existent npm package.
+
+- Security: Semgrep and audit fixes.
+
+- Dependency updates: `ai` 6.0.95, `@ai-sdk/anthropic` 3.0.46, `@ai-sdk/google` 3.0.30, `undici` 7.22.0, `sonic-boom` 4.2.1.
+
+If there are any problems, feedback or thoughts please drop an issue or message us through Discord! Thank you for using Nanocoder. 🙌
+
 # 1.22.5
 
 - Added MiniMax Coding Plan and GLM-5 to provider templates in the configuration wizard.
