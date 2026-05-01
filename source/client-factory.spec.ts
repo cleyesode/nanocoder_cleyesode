@@ -1017,6 +1017,40 @@ test.serial(
 );
 
 test.serial(
+	'createLLMClient: resolves explicit provider names case-insensitively',
+	async t => {
+		globalThis.fetch = createMockFetch(true, 200);
+
+		const configDir = join(testDir, 'case-insensitive-provider-test');
+		mkdirSync(configDir, {recursive: true});
+
+		createTestConfig(
+			{
+				nanocoder: {
+					providers: [
+						{
+							name: 'Ollama',
+							baseUrl: 'http://localhost:8000/v1',
+							models: ['llama3.1:latest'],
+						},
+					],
+				},
+			},
+			configDir,
+		);
+
+		process.cwd = () => configDir;
+		clearAppConfig();
+		reloadAppConfig();
+
+		const result = await createLLMClient('ollama');
+
+		t.truthy(result);
+		t.is(result.actualProvider, 'Ollama');
+	},
+);
+
+test.serial(
 	'createLLMClient: throws ConfigurationError when provider not found',
 	async t => {
 		globalThis.fetch = createMockFetch(true, 200);
@@ -1219,6 +1253,46 @@ test.serial(
 		t.truthy(result);
 		t.truthy(result.client);
 		t.is(result.actualProvider, 'NewProvider');
+	},
+);
+
+test.serial(
+	'createLLMClient: matches preferences.lastProvider case-insensitively',
+	async t => {
+		globalThis.fetch = createMockFetch(true, 200);
+
+		const configDir = join(testDir, 'case-insensitive-last-provider-test');
+		mkdirSync(configDir, {recursive: true});
+
+		createTestConfig(
+			{
+				nanocoder: {
+					providers: [
+						{
+							name: 'Ollama',
+							baseUrl: 'http://localhost:8000/v1',
+							models: ['llama3.1:latest'],
+						},
+					],
+				},
+			},
+			configDir,
+		);
+
+		writeFileSync(
+			join(configDir, 'nanocoder-preferences.json'),
+			JSON.stringify({lastProvider: 'ollama'}, null, 2),
+		);
+
+		process.cwd = () => configDir;
+		clearAppConfig();
+		reloadAppConfig();
+		resetPreferencesCache();
+
+		const result = await createLLMClient();
+
+		t.truthy(result);
+		t.is(result.actualProvider, 'Ollama');
 	},
 );
 

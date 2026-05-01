@@ -71,20 +71,21 @@ async function createAISDKClient(
 		}
 	}
 
+	const resolveProviderName = (providerName?: string): string | undefined => {
+		if (!providerName) {
+			return undefined;
+		}
+
+		return providers.find(
+			provider => provider.name.toLowerCase() === providerName.toLowerCase(),
+		)?.name;
+	};
+
 	// Determine which provider to try first
 	let targetProvider: string;
 	if (requestedProvider) {
-		targetProvider = requestedProvider;
-	} else {
-		// Use preferences or default to first available provider
-		const preferences = loadPreferences();
-		targetProvider = preferences.lastProvider || providers[0].name;
-	}
-
-	// Validate provider exists if specified
-	if (requestedProvider) {
-		const providerConfig = providers.find(p => p.name === requestedProvider);
-		if (!providerConfig) {
+		const resolvedRequestedProvider = resolveProviderName(requestedProvider);
+		if (!resolvedRequestedProvider) {
 			const availableProviders = providers.map(p => p.name).join(', ');
 			throw new ConfigurationError(
 				`Provider '${requestedProvider}' not found in agents.config.json. Available providers: ${availableProviders}`,
@@ -93,6 +94,12 @@ async function createAISDKClient(
 				false,
 			);
 		}
+		targetProvider = resolvedRequestedProvider;
+	} else {
+		// Use preferences or default to first available provider
+		const preferences = loadPreferences();
+		targetProvider =
+			resolveProviderName(preferences.lastProvider) || providers[0].name;
 	}
 
 	// Validate model exists in the target provider's model list if specified
