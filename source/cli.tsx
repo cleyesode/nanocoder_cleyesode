@@ -51,6 +51,9 @@ Options:
                       Defaults to "normal" for interactive sessions and "auto-accept" for run mode.
   --trust-directory   Skip the first-run directory trust prompt for this run only.
                       Only valid with the "run" command. Does not modify the preferences file.
+  --plain             Use a lightweight, Ink-free runtime for non-interactive runs.
+                      Only valid with the "run" command. Auto-enables in CI / non-TTY.
+  --no-plain          Force the Ink runtime even in CI / non-TTY environments.
   run                 Run in non-interactive mode
 
 Examples:
@@ -59,6 +62,7 @@ Examples:
   nanocoder --mode yolo run "refactor database module"
   nanocoder --mode plan
   nanocoder --trust-directory run "analyze src/app.ts"
+  nanocoder --plain run "summarize README.md"
   `);
 	process.exit(0);
 }
@@ -172,6 +176,8 @@ async function main(): Promise<void> {
 				continue; // skip fused form
 			} else if (arg === '--trust-directory') {
 				continue; // skip this flag
+			} else if (arg === '--plain' || arg === '--no-plain') {
+				continue; // skip this flag
 			} else {
 				promptArgs.push(arg);
 			}
@@ -190,6 +196,41 @@ async function main(): Promise<void> {
 		);
 	}
 	const trustDirectory = trustDirectoryRequested && nonInteractiveMode;
+
+	// --plain: lightweight, Ink-free runtime. Only valid with `run` in v1.
+	// Auto-detect: enable when stdout isn't a TTY or the env looks like CI,
+	// unless --no-plain forces the Ink path.
+	const plainRequested = args.includes('--plain');
+	const noPlainRequested = args.includes('--no-plain');
+	if (plainRequested && noPlainRequested) {
+		console.error('Cannot pass both --plain and --no-plain.');
+		process.exit(1);
+	}
+	if (plainRequested && !nonInteractiveMode) {
+		console.error(
+			'--plain requires the `run` subcommand in this version. Try: nanocoder --plain run "..."',
+		);
+		process.exit(1);
+	}
+	if (plainRequested && vscodeMode) {
+		console.error('Cannot combine --plain with --vscode.');
+		process.exit(1);
+	}
+	const ciDetected =
+		process.env.CI === 'true' ||
+		Boolean(
+			process.env.GITHUB_ACTIONS ||
+				process.env.GITLAB_CI ||
+				process.env.BUILDKITE ||
+				process.env.CIRCLECI ||
+				process.env.JENKINS_URL,
+		);
+	const plainAuto =
+		nonInteractiveMode &&
+		!noPlainRequested &&
+		!vscodeMode &&
+		(!process.stdout.isTTY || ciDetected);
+	const plainMode = plainRequested || plainAuto;
 
 	// Handle codex/copilot login from CLI (no App)
 	if (args[0] === 'codex' && args[1] === 'login') {
@@ -242,6 +283,17 @@ async function main(): Promise<void> {
 			console.error(err instanceof Error ? err.message : err);
 			process.exit(1);
 		}
+	} else if (plainMode && nonInteractivePrompt) {
+		// Headless, Ink-free path. Note: --plain is currently only valid with
+		// `run`, so we must have a non-empty prompt here.
+		const {runPlainShell} = await import('@/plain/shell');
+		await runPlainShell({
+			prompt: nonInteractivePrompt,
+			developmentMode: cliMode ?? 'auto-accept',
+			cliProvider,
+			cliModel,
+			trustDirectory,
+		});
 	} else {
 		render(
 			<App
