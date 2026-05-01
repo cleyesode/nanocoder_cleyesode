@@ -19,6 +19,7 @@ import {getLogger} from '@/utils/logging';
 import {isLocalURL} from '@/utils/url-utils';
 import {handleChat} from './chat/chat-handler.js';
 import {type AIProvider, createProvider} from './providers/provider-factory.js';
+import {getTlsConnectOptions} from './tls-config.js';
 
 export class AISDKClient implements LLMClient {
 	// Definite-assignment: populated by the async `create()` factory before
@@ -66,6 +67,7 @@ export class AISDKClient implements LLMClient {
 		this.undiciAgent = new Agent({
 			connect: {
 				timeout: resolvedSocketTimeout,
+				...getTlsConnectOptions(this.providerConfig),
 			},
 			bodyTimeout: resolvedSocketTimeout,
 			headersTimeout: resolvedSocketTimeout,

@@ -185,6 +185,7 @@ function loadProviderConfigs(): AIProviderConfig[] {
 		config: {
 			baseURL: provider.baseUrl,
 			apiKey: provider.apiKey || 'dummy-key',
+			caCertPath: provider.caCertPath,
 			headers: provider.headers ?? {},
 		},
 	}));
