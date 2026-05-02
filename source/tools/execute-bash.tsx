@@ -78,7 +78,7 @@ const executeBashCoreTool = tool({
 		},
 		required: ['command'],
 	}),
-	// High risk: bash commands require approval unless explicitly configured in nanocoderTools.alwaysAllow
+	// High risk: bash commands require approval unless explicitly configured in alwaysAllow
 	needsApproval: () => {
 		// Check if this tool is configured to always be allowed
 		if (isNanocoderToolAlwaysAllowed('execute_bash')) {

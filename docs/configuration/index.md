@@ -193,26 +193,12 @@ The `--mode` CLI flag always takes precedence over this config value. Non-intera
 
 ### Tool Auto-Approval
 
-Allow specific tools to run without confirmation, even in normal development mode.
+Allow specific tools to run without confirmation, even in normal development mode. The `alwaysAllow` array accepts tool names — listed tools execute immediately without prompting for approval, and the same list also applies to non-interactive runs (`nanocoder run ...`).
 
 ```json
 {
   "nanocoder": {
-    "nanocoderTools": {
-      "alwaysAllow": ["execute_bash", "read_file", "find_files"]
-    }
-  }
-}
-```
-
-The `alwaysAllow` array accepts tool names. Tools listed here will execute immediately without prompting for approval.
-
-You can also use the top-level `alwaysAllow` which applies to all tools (including in non-interactive mode):
-
-```json
-{
-  "nanocoder": {
-    "alwaysAllow": ["execute_bash", "read_file"]
+    "alwaysAllow": ["execute_bash", "read_file", "find_files"]
   }
 }
 ```
