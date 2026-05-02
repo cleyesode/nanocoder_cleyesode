@@ -151,6 +151,7 @@ interface ProviderConfigObject {
 			models: string[];
 			baseUrl?: string;
 			apiKey?: string;
+			caCertPath?: string;
 			organizationId?: string;
 			timeout?: number;
 			sdkProvider?: SdkProvider;
@@ -180,6 +181,7 @@ export function buildProviderConfigObject(
 					models: string[];
 					baseUrl?: string;
 					apiKey?: string;
+					caCertPath?: string;
 					organizationId?: string;
 					timeout?: number;
 					sdkProvider?: SdkProvider;
@@ -194,6 +196,10 @@ export function buildProviderConfigObject(
 
 				if (p.apiKey) {
 					providerConfig.apiKey = p.apiKey;
+				}
+
+				if (p.caCertPath) {
+					providerConfig.caCertPath = p.caCertPath;
 				}
 
 				if (p.organizationId) {
@@ -251,6 +257,7 @@ export function buildConfigObject(
 			models: string[];
 			baseUrl?: string;
 			apiKey?: string;
+			caCertPath?: string;
 			organizationId?: string;
 			timeout?: number;
 			sdkProvider?: SdkProvider;
@@ -265,6 +272,7 @@ export function buildConfigObject(
 				models: string[];
 				baseUrl?: string;
 				apiKey?: string;
+				caCertPath?: string;
 				organizationId?: string;
 				timeout?: number;
 				sdkProvider?: SdkProvider;
@@ -279,6 +287,7 @@ export function buildConfigObject(
 					models: string[];
 					baseUrl?: string;
 					apiKey?: string;
+					caCertPath?: string;
 					organizationId?: string;
 					timeout?: number;
 					sdkProvider?: SdkProvider;
@@ -293,6 +302,10 @@ export function buildConfigObject(
 
 				if (p.apiKey) {
 					providerConfig.apiKey = p.apiKey;
+				}
+
+				if (p.caCertPath) {
+					providerConfig.caCertPath = p.caCertPath;
 				}
 
 				if (p.organizationId) {

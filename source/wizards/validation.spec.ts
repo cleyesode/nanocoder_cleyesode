@@ -444,6 +444,21 @@ test('testProviderConnection: returns connected=true for reachable localhost', a
 });
 
 // ============================================================================
+test('buildConfigObject: includes caCertPath when present', t => {
+	const providers = [
+		{
+			name: 'Custom Provider',
+			baseUrl: 'https://api.example.com/v1',
+			caCertPath: '/tmp/custom-ca.pem',
+			models: ['model-1'],
+		},
+	];
+
+	const config = buildConfigObject(providers, {});
+
+	t.is(config.nanocoder.providers[0].caCertPath, '/tmp/custom-ca.pem');
+});
+
 // Tests for sdkProvider field
 // ============================================================================
 

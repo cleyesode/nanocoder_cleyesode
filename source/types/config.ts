@@ -33,6 +33,7 @@ export interface AIProviderConfig {
 	config: {
 		baseURL?: string;
 		apiKey?: string;
+		caCertPath?: string;
 		headers?: Record<string, string>;
 		[key: string]: unknown;
 	};
@@ -43,6 +44,7 @@ export interface ProviderConfig {
 	name: string;
 	baseUrl?: string;
 	apiKey?: string;
+	caCertPath?: string;
 	models: string[];
 	contextWindow?: number;
 	contextWindows?: Record<string, number>;
@@ -102,6 +104,7 @@ export interface AppConfig {
 		name: string;
 		baseUrl?: string;
 		apiKey?: string;
+		caCertPath?: string;
 		models: string[];
 		contextWindow?: number;
 		contextWindows?: Record<string, number>;
