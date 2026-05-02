@@ -55,6 +55,12 @@ function buildPromptWithActiveEditor(
 ): string {
 	if (!editor?.fileName) return message;
 
+	// Bash (!) and slash (/) commands are handled locally — appending the
+	// editor pill would either corrupt the bash command or attach noise to
+	// a slash command that never reaches the LLM.
+	const trimmed = message.trim();
+	if (trimmed.startsWith('!') || trimmed.startsWith('/')) return message;
+
 	const hasSelection = !!editor.selection && editor.startLine && editor.endLine;
 	if (hasSelection) {
 		return `${message}\n\n[@${editor.fileName} (lines ${editor.startLine}-${editor.endLine})]<!--vscode-context-->\n\`\`\`\n${editor.selection}\n\`\`\`<!--/vscode-context-->`;

@@ -205,6 +205,44 @@ test('useUserSubmit inlines selection when one is present', async t => {
 	t.regex(sent, /foo\(\)/);
 });
 
+test('useUserSubmit skips editor pill for bash commands', async t => {
+	const submit = spy<[string]>();
+	const fn = setupUserSubmit({
+		handleMessageSubmit: async (m: string) => {
+			submit(m);
+		},
+		activeEditor: {
+			fileName: 'app.ts',
+			selection: 'foo()',
+			startLine: 5,
+			endLine: 5,
+		} as ActiveEditorState,
+	});
+
+	await fn('!ls -la');
+
+	t.deepEqual(submit.calls, [['!ls -la']]);
+});
+
+test('useUserSubmit skips editor pill for slash commands', async t => {
+	const submit = spy<[string]>();
+	const fn = setupUserSubmit({
+		handleMessageSubmit: async (m: string) => {
+			submit(m);
+		},
+		activeEditor: {
+			fileName: 'app.ts',
+			selection: 'foo()',
+			startLine: 5,
+			endLine: 5,
+		} as ActiveEditorState,
+	});
+
+	await fn('/clear');
+
+	t.deepEqual(submit.calls, [['/clear']]);
+});
+
 test('useUserSubmit ignores editor with no fileName', async t => {
 	const submit = spy<[string]>();
 	const fn = setupUserSubmit({
