@@ -479,9 +479,20 @@ export function useAppHandlers(props: UseAppHandlersProps): AppHandlers {
 			// Reset conversation completion flag when starting a new message
 			props.setIsConversationComplete(false);
 
-			// Extract command args for slash commands (used by /rename etc.)
+			// Extract command args for slash commands (used by /rename etc.).
+			// The VS Code editor pill is appended at the end of the message
+			// (\n\n[@…]<!--vscode-context-->…<!--/vscode-context-->); strip it
+			// so it doesn't leak into the parsed args.
 			const commandArgs = message.startsWith('/')
-				? message.slice(1).trim().split(/\s+/).slice(1)
+				? message
+						.replace(
+							/\n\n\[@[^\]]+\]<!--vscode-context-->[\s\S]*?<!--\/vscode-context-->\s*$/,
+							'',
+						)
+						.slice(1)
+						.trim()
+						.split(/\s+/)
+						.slice(1)
 				: undefined;
 
 			await handleMessageSubmission(message, {

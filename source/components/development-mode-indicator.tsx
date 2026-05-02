@@ -57,44 +57,123 @@ export const DevelopmentModeIndicator = React.memo(
 				: 'tune: enabled'
 			: '';
 
-		// Truncate the filename so the whole indicator line stays within one
-		// terminal row — the other segments (mode, tune, ctx, prefix, suffix)
-		// keep their budget and we shrink just the filename with an ellipsis.
-		const editorLabel = (() => {
-			if (!activeEditor?.fileName) return null;
+		// Mode, tune, and ctx never truncate. Session name and the filename
+		// portion of the editor pill share whatever room is left, each
+		// truncating with an ellipsis; if both fit fully neither truncates;
+		// if both overflow they split the remaining space evenly.
+		// The line-range suffix and the (Shift+Tab to cycle) hint are
+		// optional — drop them when otherwise the row would wrap. Suffix
+		// drops first (line-range info is more contextual than help text),
+		// then the shift hint.
+		const {sessionLabel, editorLabel, showShiftHint} = (() => {
+			const editorFileName = activeEditor?.fileName;
 			const hasSelection =
-				!!activeEditor.selection &&
+				!!activeEditor?.selection &&
 				!!activeEditor.startLine &&
 				!!activeEditor.endLine;
-			const prefix = hasSelection ? '⊡ ' : '⊡ In ';
-			const suffix = hasSelection
-				? ` (L${activeEditor.startLine}-${activeEditor.endLine})`
+			const editorPrefix = editorFileName
+				? hasSelection
+					? '⊡ '
+					: '⊡ In '
 				: '';
+			const editorSuffixFull =
+				editorFileName && hasSelection
+					? ` (L${activeEditor.startLine}-${activeEditor.endLine})`
+					: '';
 
-			const shiftHint =
+			const shiftHintFull =
 				isNarrow && developmentMode !== 'scheduler'
 					? ' (Shift+Tab to cycle)'
 					: '';
 			const tuneSegment = tuneLabel ? ` · ${tuneLabel}` : '';
 			const ctxSegment =
 				contextPercentUsed !== null ? ` · ctx: ${contextPercentUsed}%` : '';
+			const sessionSeparator = sessionName ? ' · ' : '';
+			const editorSeparator = editorFileName ? ' · ' : '';
 
-			const usedWidth =
+			const minLen = 6;
+			const minSessionLen = sessionName ? minLen : 0;
+			const minEditorLen = editorFileName ? minLen : 0;
+
+			// Width consumed by parts that always render.
+			const requiredWidth =
+				modeLabel.length +
+				tuneSegment.length +
+				ctxSegment.length +
+				sessionSeparator.length +
+				editorSeparator.length +
+				editorPrefix.length +
+				minSessionLen +
+				minEditorLen;
+
+			// Decide which optional segments fit. Drop the suffix first, then
+			// the shift hint, until the row fits within actualWidth.
+			let editorSuffix = editorSuffixFull;
+			let shiftHint = shiftHintFull;
+			if (
+				requiredWidth + editorSuffix.length + shiftHint.length + 1 >
+				actualWidth
+			) {
+				editorSuffix = '';
+				if (requiredWidth + shiftHint.length + 1 > actualWidth) {
+					shiftHint = '';
+				}
+			}
+
+			const fixedWidth =
 				modeLabel.length +
 				shiftHint.length +
 				tuneSegment.length +
 				ctxSegment.length +
-				` · ${prefix}`.length +
-				suffix.length;
+				sessionSeparator.length +
+				editorSeparator.length +
+				editorPrefix.length +
+				editorSuffix.length;
 
-			const minFilenameLen = 8;
-			const maxFilenameLen = Math.max(
-				minFilenameLen,
-				actualWidth - usedWidth - 1,
-			);
-			const filename = truncate(activeEditor.fileName, maxFilenameLen);
+			const remaining = Math.max(0, actualWidth - fixedWidth - 1);
 
-			return `${prefix}${filename}${suffix}`;
+			let sessionMax = 0;
+			let filenameMax = 0;
+			if (sessionName && editorFileName) {
+				const sessionNeed = sessionName.length;
+				const filenameNeed = editorFileName.length;
+				if (sessionNeed + filenameNeed <= remaining) {
+					sessionMax = sessionNeed;
+					filenameMax = filenameNeed;
+				} else {
+					const half = Math.floor(remaining / 2);
+					if (sessionNeed <= half) {
+						sessionMax = sessionNeed;
+						filenameMax = remaining - sessionMax;
+					} else if (filenameNeed <= half) {
+						filenameMax = filenameNeed;
+						sessionMax = remaining - filenameMax;
+					} else {
+						sessionMax = half;
+						filenameMax = remaining - half;
+					}
+				}
+			} else if (sessionName) {
+				sessionMax = remaining;
+			} else if (editorFileName) {
+				filenameMax = remaining;
+			}
+
+			const session = sessionName
+				? truncate(sessionName, Math.max(minLen, sessionMax))
+				: null;
+			const editor = editorFileName
+				? `${editorPrefix}${truncate(
+						editorFileName,
+						Math.max(minLen, filenameMax),
+					)}${editorSuffix}`
+				: null;
+
+			return {
+				sessionLabel: session,
+				editorLabel: editor,
+				showShiftHint: shiftHint.length > 0,
+			};
 		})();
 
 		return (
@@ -112,14 +191,12 @@ export const DevelopmentModeIndicator = React.memo(
 					}
 				>
 					<Text bold>{modeLabel}</Text>
-					{isNarrow && developmentMode !== 'scheduler' && (
-						<Text> (Shift+Tab to cycle)</Text>
-					)}
+					{showShiftHint && <Text> (Shift+Tab to cycle)</Text>}
 				</Text>
-				{sessionName && (
+				{sessionLabel && (
 					<>
 						<Text color={colors.secondary}> · </Text>
-						<Text color={colors.primary}>{sessionName}</Text>
+						<Text color={colors.primary}>{sessionLabel}</Text>
 					</>
 				)}
 				{tuneLabel && (

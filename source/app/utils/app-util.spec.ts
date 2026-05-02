@@ -545,6 +545,141 @@ test.serial('resume command - /resume without --all opens selector in project mo
 	}
 });
 
+// --- /rename command tests ---
+
+function createRenameTestOptions(overrides: {
+	onRenameSession?: (name: string) => void;
+	onAddToChatQueue?: (component: React.ReactNode) => void;
+	onCommandComplete?: () => void;
+	commandArgs?: string[];
+}): MessageSubmissionOptions {
+	let key = 0;
+	return {
+		customCommandCache: new Map(),
+		customCommandLoader: null,
+		customCommandExecutor: null,
+		onClearMessages: async () => {},
+		onRenameSession: overrides.onRenameSession ?? (() => {}),
+		commandArgs: overrides.commandArgs,
+		onEnterModelSelectionMode: () => {},
+		onEnterProviderSelectionMode: () => {},
+		onEnterModelDatabaseMode: () => {},
+		onEnterConfigWizardMode: () => {},
+		onEnterSettingsMode: () => {},
+		onEnterMcpWizardMode: () => {},
+		onEnterExplorerMode: () => {},
+		onEnterIdeSelectionMode: () => {},
+		onEnterCheckpointLoadMode: () => {},
+		onShowStatus: () => {},
+		onHandleChatMessage: async () => {},
+		onAddToChatQueue: overrides.onAddToChatQueue ?? (() => {}),
+		setLiveComponent: () => {},
+		setIsToolExecuting: () => {},
+		getNextComponentKey: () => ++key,
+		setMessages: () => {},
+		messages: [],
+		provider: 'test',
+		model: 'test',
+		theme: 'dark',
+		updateInfo: null,
+		getMessageTokens: () => 0,
+		onCommandComplete: overrides.onCommandComplete,
+	} as unknown as MessageSubmissionOptions;
+}
+
+function findMessageInQueue(
+	queue: React.ReactNode[],
+	predicate: (msg: string) => boolean,
+): boolean {
+	return queue.some(node => {
+		if (!React.isValidElement(node)) return false;
+		const props = node.props as {message?: unknown};
+		return typeof props.message === 'string' && predicate(props.message);
+	});
+}
+
+test('rename command - valid name calls onRenameSession with trimmed value', async t => {
+	let capturedName: string | undefined;
+	const options = createRenameTestOptions({
+		onRenameSession: name => {
+			capturedName = name;
+		},
+		commandArgs: ['my-session'],
+	});
+	await handleMessageSubmission('/rename my-session', options);
+	t.is(capturedName, 'my-session');
+});
+
+test('rename command - multi-word name is joined with spaces', async t => {
+	let capturedName: string | undefined;
+	const options = createRenameTestOptions({
+		onRenameSession: name => {
+			capturedName = name;
+		},
+		commandArgs: ['my', 'cool', 'session'],
+	});
+	await handleMessageSubmission('/rename my cool session', options);
+	t.is(capturedName, 'my cool session');
+});
+
+test('rename command - empty args show usage error', async t => {
+	const queue: React.ReactNode[] = [];
+	let renamedCalled = false;
+	const options = createRenameTestOptions({
+		onRenameSession: () => {
+			renamedCalled = true;
+		},
+		onAddToChatQueue: node => {
+			queue.push(node);
+		},
+		commandArgs: [],
+	});
+	await handleMessageSubmission('/rename', options);
+	t.false(renamedCalled, 'onRenameSession should not be called for empty args');
+	t.true(
+		findMessageInQueue(queue, m => m.includes('Usage')),
+		'an error message containing "Usage" should be queued',
+	);
+});
+
+test('rename command - whitespace-only name shows usage error', async t => {
+	const queue: React.ReactNode[] = [];
+	let renamedCalled = false;
+	const options = createRenameTestOptions({
+		onRenameSession: () => {
+			renamedCalled = true;
+		},
+		onAddToChatQueue: node => {
+			queue.push(node);
+		},
+		commandArgs: ['   '],
+	});
+	await handleMessageSubmission('/rename    ', options);
+	t.false(renamedCalled);
+	t.true(findMessageInQueue(queue, m => m.includes('Usage')));
+});
+
+test('rename command - name over MAX_SESSION_NAME_LENGTH shows error', async t => {
+	const queue: React.ReactNode[] = [];
+	let renamedCalled = false;
+	const longName = 'a'.repeat(150);
+	const options = createRenameTestOptions({
+		onRenameSession: () => {
+			renamedCalled = true;
+		},
+		onAddToChatQueue: node => {
+			queue.push(node);
+		},
+		commandArgs: [longName],
+	});
+	await handleMessageSubmission(`/rename ${longName}`, options);
+	t.false(renamedCalled, 'onRenameSession should not be called when over the limit');
+	t.true(
+		findMessageInQueue(queue, m => m.includes('100 characters')),
+		'an error message mentioning the 100-character limit should be queued',
+	);
+});
+
 // --- createClearMessagesHandler tests ---
 
 test('createClearMessagesHandler - clears messages to empty array', async t => {
