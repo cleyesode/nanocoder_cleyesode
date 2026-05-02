@@ -80,6 +80,11 @@ export const resetFallbackNotice = () => {
 // models, where there is no Thought to group under).
 let lastTurnHadReasoning = false;
 
+/** Reset the reasoning-grouping flag (for testing). */
+export const resetLastTurnHadReasoning = () => {
+	lastTurnHadReasoning = false;
+};
+
 /**
  * Main conversation loop that processes assistant responses and handles tool calls.
  * This function orchestrates the entire conversation flow including:
