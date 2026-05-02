@@ -159,9 +159,10 @@ function resolveSystemPromptOverride(
 	}
 
 	if (override.file !== undefined) {
+		// Path comes from the user's own agents.config.json (trusted config), same model as source/config/index.ts
 		const filePath = isAbsolute(override.file)
 			? override.file
-			: resolve(process.cwd(), override.file);
+			: resolve(process.cwd(), override.file); // nosemgrep
 		try {
 			return readFileSync(filePath, 'utf-8');
 		} catch (error) {
